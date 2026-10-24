@@ -1137,6 +1137,54 @@
       "frames": 60,
       "failures": [],
       "at": "2026-10-24T22:14:33.802Z"
+    },
+    {
+      "status": "continuous",
+      "counter": "32390363418",
+      "interval": 1.270152256,
+      "frames": 60,
+      "failures": [],
+      "at": "2026-10-24T22:14:35.064Z"
+    },
+    {
+      "status": "continuous",
+      "counter": "32429312439",
+      "interval": 1.246368672,
+      "frames": 60,
+      "failures": [],
+      "at": "2026-10-24T22:14:36.331Z"
+    },
+    {
+      "status": "continuous",
+      "counter": "32468898645",
+      "interval": 1.266758592,
+      "frames": 60,
+      "failures": [],
+      "at": "2026-10-24T22:14:37.604Z"
+    },
+    {
+      "status": "continuous",
+      "counter": "32509002238",
+      "interval": 1.283314976,
+      "frames": 60,
+      "failures": [],
+      "at": "2026-10-24T22:14:38.890Z"
+    },
+    {
+      "status": "continuous",
+      "counter": "32548713747",
+      "interval": 1.270768288,
+      "frames": 60,
+      "failures": [],
+      "at": "2026-10-24T22:14:40.222Z"
+    },
+    {
+      "status": "continuous",
+      "counter": "32587652099",
+      "interval": 1.246027264,
+      "frames": 60,
+      "failures": [],
+      "at": "2026-10-24T22:14:41.382Z"
     }
   ],
   "resourcesRetained": true,
@@ -3321,4 +3369,23 @@
       1130,
       1131,
       1132,
-      113
+      1133,
+      1135,
+      1137,
+      1138,
+      1139,
+      1140,
+      1141,
+      1142,
+      1144
+    ],
+    "resultOffset": 11200,
+    "stackOffset": 372736,
+    "tablesOffset": 12288
+  },
+  "frameSha256": "feeffa28e5f06a1f88b16562d40a32afb5000cdfcb4ff60fc196705c101076bb",
+  "framesPerCycle": 60,
+  "continuous": true,
+  "thread": "490697482240",
+  "threadRunning": true
+}
