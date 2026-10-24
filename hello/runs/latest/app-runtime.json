@@ -1,0 +1,40 @@
+{
+  "session": "latest",
+  "started": "2026-10-24T22:11:13.869Z",
+  "transitions": [],
+  "generation": 1,
+  "resourcesRetained": true,
+  "catalog": {
+    "root": "K:\\ns1modns2\\hello\\apps",
+    "apps": [
+      {
+        "id": "ftpd-sb",
+        "name": "ftpd-sb",
+        "version": "0.1.0",
+        "description": "FTP file transfer for romfs, save, and tmp",
+        "root": "K:\\ns1modns2\\hello\\apps\\ftpd-sb-main",
+        "fingerprint": "2a1bfea12a4d2ee0de4510fe4378e2e9325cb81ae5826c377d651d87c0aaa72a",
+        "effects": {}
+      },
+      {
+        "id": "hello-world",
+        "name": "Hello World",
+        "version": "1.0.0",
+        "description": "A simple first homebrew app",
+        "root": "K:\\ns1modns2\\hello\\apps\\hello-world",
+        "fingerprint": "ecf7a20e8a2c6c47e5a04225cd2e74c7c79add79fc1bd2994cb9a74ff4bf517a",
+        "effects": {}
+      },
+      {
+        "id": "media-player",
+        "name": "Media Player Suite",
+        "version": "1.0.0",
+        "description": "Full media playback suite for MP3, FLAC, WAV, OPUS, MP4, and WEBM files",
+        "root": "K:\\ns1modns2\\hello\\apps\\media-player",
+        "fingerprint": "fde54b4bc0e5597d8f81d2d31ba715088444f2ce121657acf03ed3c96fb87f87",
+        "effects": {}
+      }
+    ],
+    "rejected": []
+  }
+}

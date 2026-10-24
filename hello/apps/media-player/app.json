@@ -1,0 +1,24 @@
+{
+  "format": "hblauncher.gpu-app",
+  "abi": 1,
+  "id": "media-player",
+  "name": "Media Player Suite",
+  "version": "1.0.0",
+  "description": "Full media playback suite for MP3, FLAC, WAV, OPUS, MP4, and WEBM files",
+  "icon": "assets/icon.png",
+  "initialState": "assets/state.bin",
+  "data": "assets/data.bin",
+  "shaders": {
+    "vertex": "app.vert.spv",
+    "fragment": "app.frag.spv",
+    "compute": "app.comp.spv"
+  },
+  "sdk": {
+    "version": 1,
+    "capabilities": [],
+    "services": [
+      "ftp"
+    ],
+    "ftpPort": 5000
+  }
+}

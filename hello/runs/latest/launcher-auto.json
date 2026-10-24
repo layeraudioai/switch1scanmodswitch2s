@@ -1,0 +1,191 @@
+{
+  "purpose": "HBLauncher GPU app packages from the PC; SD loading is not connected",
+  "runtimeABI": 1,
+  "titleCount": 3,
+  "catalog": {
+    "root": "K:\\ns1modns2\\hello\\apps",
+    "apps": [
+      {
+        "id": "ftpd-sb",
+        "name": "ftpd-sb",
+        "version": "0.1.0",
+        "description": "FTP file transfer for romfs, save, and tmp",
+        "root": "K:\\ns1modns2\\hello\\apps\\ftpd-sb-main",
+        "fingerprint": "2a1bfea12a4d2ee0de4510fe4378e2e9325cb81ae5826c377d651d87c0aaa72a",
+        "effects": {}
+      },
+      {
+        "id": "hello-world",
+        "name": "Hello World",
+        "version": "1.0.0",
+        "description": "A simple first homebrew app",
+        "root": "K:\\ns1modns2\\hello\\apps\\hello-world",
+        "fingerprint": "ecf7a20e8a2c6c47e5a04225cd2e74c7c79add79fc1bd2994cb9a74ff4bf517a",
+        "effects": {}
+      },
+      {
+        "id": "media-player",
+        "name": "Media Player Suite",
+        "version": "1.0.0",
+        "description": "Full media playback suite for MP3, FLAC, WAV, OPUS, MP4, and WEBM files",
+        "root": "K:\\ns1modns2\\hello\\apps\\media-player",
+        "fingerprint": "fde54b4bc0e5597d8f81d2d31ba715088444f2ce121657acf03ed3c96fb87f87",
+        "effects": {}
+      }
+    ],
+    "rejected": []
+  },
+  "session": "latest",
+  "started": "2026-10-24T22:10:56.180Z",
+  "resourcesRetained": true,
+  "frames": 1,
+  "functions": {
+    "vkCreateShaderModule": 339609018480,
+    "vkCreateDescriptorSetLayout": 339609019728,
+    "vkCreatePipelineLayout": 339609019344,
+    "vkEnumeratePhysicalDevices": 339609012880,
+    "vkGetPhysicalDeviceMemoryProperties": 339609013584,
+    "vkCreateBuffer": 339609017616,
+    "vkGetBufferMemoryRequirements": 339609015696,
+    "vkAllocateMemory": 339609014832,
+    "vkBindBufferMemory": 339609015504,
+    "vkMapMemory2": 339609034736,
+    "vkCreateDescriptorPool": 339609019920,
+    "vkAllocateDescriptorSets": 339609020208,
+    "vkUpdateDescriptorSets": 339609020400,
+    "vkCreateGraphicsPipelines": 339609019056,
+    "vkCreateComputePipelines": 339609019152,
+    "vkGetSwapchainImagesKHR": 339609037776,
+    "vkCreateSemaphore": 339609016656,
+    "vkCreateImageView": 339609018288,
+    "vkCreateCommandPool": 339609020976,
+    "vkAllocateCommandBuffers": 339609010400,
+    "vkBeginCommandBuffer": 339609021360,
+    "vkCmdPipelineBarrier2": 339609030992,
+    "vkCmdBindDescriptorSets2": 339609034928,
+    "vkCmdBindPipeline": 339609021648,
+    "vkCmdDispatch": 339609023280,
+    "vkCmdBeginRendering": 339609030224,
+    "vkCmdDraw": 339609022896,
+    "vkCmdEndRendering": 339609030896,
+    "vkCmdCopyImageToBuffer2": 339609030800,
+    "vkEndCommandBuffer": 339609021456,
+    "vkAcquireNextImage2KHR": 339609040080,
+    "vkQueueSubmit": 339609014544,
+    "vkQueuePresentKHR": 339609037968,
+    "vkQueueWaitIdle": 339609014640
+  },
+  "commands": [
+    [
+      "487535804496",
+      "487536582736"
+    ]
+  ],
+  "operations": [
+    {
+      "name": "vkAcquireNextImage2KHR",
+      "args": [
+        "487480639568",
+        493004334464,
+        493004333968
+      ],
+      "started": "2026-10-24T22:11:02.983Z",
+      "status": "returned",
+      "result": "0",
+      "completed": "2026-10-24T22:11:02.992Z"
+    },
+    {
+      "name": "vkQueueSubmit",
+      "args": [
+        "487477391760",
+        1,
+        493004336512,
+        0
+      ],
+      "started": "2026-10-24T22:11:03.042Z",
+      "status": "returned",
+      "result": "0",
+      "completed": "2026-10-24T22:11:03.048Z"
+    },
+    {
+      "name": "vkQueuePresentKHR",
+      "args": [
+        "487477391760",
+        493004337024
+      ],
+      "started": "2026-10-24T22:11:03.087Z",
+      "status": "returned",
+      "result": "0",
+      "completed": "2026-10-24T22:11:03.095Z"
+    },
+    {
+      "name": "vkQueueWaitIdle",
+      "args": [
+        "487477391760"
+      ],
+      "started": "2026-10-24T22:11:03.119Z",
+      "status": "returned",
+      "result": "0",
+      "completed": "2026-10-24T22:11:03.128Z"
+    }
+  ],
+  "shaderStaging": {
+    "address": 490697195520,
+    "bytes": 131072
+  },
+  "capture": {
+    "buffer": "487471318912",
+    "memory": "487516943280",
+    "mapped": 487525384192,
+    "bytes": 8294400,
+    "width": 1920,
+    "height": 1080
+  },
+  "controls": {
+    "buffer": "487471318544",
+    "memory": "487516942416",
+    "mapped": 487516995584,
+    "setLayout": "487471410256",
+    "descriptorPool": "487481446480",
+    "descriptor": "487474448208",
+    "bytes": 8388608
+  },
+  "pipeline": "487516954704",
+  "layout": "487516254288",
+  "shaders": [
+    "487484992512",
+    "487484992784"
+  ],
+  "computePipeline": "487536623696",
+  "computeShader": "487515611488",
+  "resources": {
+    "device": "487480639568",
+    "queue": "487477391760",
+    "swapchain": "487477395072",
+    "images": [
+      "487480219216",
+      "487480220752"
+    ],
+    "views": [
+      "487471215952",
+      "487471216272"
+    ],
+    "semaphores": [
+      "487474469488",
+      "487474469776"
+    ],
+    "acquired": "487474469200",
+    "pool": "487479495136"
+  },
+  "firstShaderFramePresented": true,
+  "computeCheck": {
+    "angleX": 8.016666412353516,
+    "palette": 0,
+    "buttons": 0,
+    "frames": 1,
+    "modal": 0
+  },
+  "ready": true,
+  "scratchRestored": true,
+  "completed": "2026-10-24T22:11:04.511Z"
+}

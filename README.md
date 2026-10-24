@@ -1,60 +1,95 @@
-Thank you Codex for dutifully packaging the exploits for distribution. No, I have not read the distributed package.
+# NXHID
 
-# Switch 2 FS demo
+Turn a homebrew-enabled Nintendo Switch into a USB keyboard controlled over Wi-Fi.
 
-Runs two small native functions inside FS, checks their results, and restores the
-original instructions. Switch 2 only; no npm install or compiler needed.
+Originally made for [ns2jb](https://gitlab.com/pepsipu/ns2jb).
 
-You need **SmileBASIC 4.4.9**, **system software 23.0.1**, **Node.js 22+** on
-macOS or Linux, and over **20 MiB free** in the SmileBASIC save. The computer and
-console must be on the same reachable network.
+```text
+Computer → Wi-Fi → Switch → USB-C → target device
+```
 
-## One-time setup
+## Setup
 
-In SmileBASIC’s **Make a Program**, enter `bootstrap.bas` into slot 0 and save it
-as `NS2`. A USB keyboard helps. The ZIP is a computer package, not a SmileBASIC
-import file; there is no published download key.
+You need a homebrew-enabled Switch running Horizon OS 5.0.0+, a USB data cable,
+and Python 3.8+ on the sender. The Switch and sender must share a LAN.
+Connections use TCP port `24872`.
 
-## Run
+1. Copy `nxhid.nro` to `/switch/nxhid/nxhid.nro` on the SD card.
+2. Hold **R** while launching a game to open Homebrew Menu in full application
+   mode, then launch NXHID. Album/applet mode is not supported.
+3. Connect the Switch's own USB-C port directly to the target device.
+4. Wait for **Keyboard ready**, then use the Switch IP shown on screen.
 
-1. Restart the console, open SmileBASIC, and enter Direct mode.
-2. On the computer, open a terminal in the extracted folder and run:
+<p align="center">
+  <img src="docs/images/screenshot.jpg" alt="NXHID running on a Switch connected by USB to a Switch 2" width="480">
+  <br>
+  <em>Switch running NXHID connected to a Switch 2</em>
+</p>
 
-   ```sh
-   node run.cjs
-   ```
+Keep NXHID open while forwarding. **B** disconnects the sender and releases keys;
+**+** exits. Only one sender can connect at a time.
 
-   If asked, select the computer address reachable by the console. You can also
-   supply it directly: `node run.cjs 192.168.1.10`. The connection uses port 39380.
+## Send text
 
-3. In SmileBASIC, load the saved program and enter these commands separately:
+Replace `192.168.1.50` with your Switch IP.
 
-   ```basic
-   LOAD "TXT:NS2"
-   RUN
-   REMOVE NSR,&H60000000,&H3FFFFFFF
-   ```
+```sh
+# Literal text.
+python3 client/nxhid.py 192.168.1.50 text 'Hello!'
 
-   Confirm the load. The **Out of memory** message from `REMOVE` is expected.
-   Then enter the **`V=START(...)`** line printed by the computer.
+# File input.
+python3 client/nxhid.py 192.168.1.50 text --file notes.txt
 
-Keep SmileBASIC open and the computer awake until **FS execution verified**.
-Restart the console when finished; that also restores the original RO process.
-This demo does not install custom firmware or persistence.
+# Stream stdin as it arrives.
+printf 'Hello\n' | python3 client/nxhid.py 192.168.1.50 text
 
-If a run fails, keep the `runs` folder and restart the console before trying
-again. Enter `REMOVE` only once per application process. Logs and temporary
-memory captures stay in `runs`; they are not part of the distributable.
+# Avoid SmileBASIC auto-indent with ENTER,HOME,CTRL+DELETE at each newline.
+python3 client/nxhid.py 192.168.1.50 text --delay 0.02 \
+  --newline-sequence 'ENTER,HOME,CTRL+DELETE' < notes.txt
+```
 
-Physically tested on October 21, 2026: both FS instruction challenges,
-restoration, and cleanup passed. Acquisition is timing-sensitive: the test
-passed on the third fresh boot. The first two attempts stopped at validation
-checks and cleaned up.
+`--newline-sequence` replaces each newline with the sequence in order. Each step
+is held for 50 ms, then released. `--delay` sets the pause after each text
+character and sequence step, including the last step; the default is 0.02 seconds.
+Without a sequence, a newline sends Enter. CRLF counts as one newline; blank
+lines and trailing newlines also run the sequence.
 
-## Code
+Stdin streams before EOF and keeps the connection alive during pauses. Producers
+must flush their output for immediate delivery. `--file -` also selects stdin.
+Interactive terminals normally buffer input until Enter.
 
-`run.cjs` is the host entrypoint. `engine/switch2/pipeline.cjs` contains the fixed
-launch sequence; `engine/switch2/process/fs-execute.cjs` contains the FS demo.
-The native helper and its source are in `engine/switch2/ro/payload/`.
-Developers can reproduce it with Zig 0.15.2:
-`node engine/build-payload.cjs --check --zig /path/to/zig`.
+Text uses a **US keyboard layout** and supports printable ASCII, newlines, tabs,
+and backspace. Caps Lock is compensated using the target's latest LED report.
+Unsupported characters stop sending; already-streamed characters cannot be undone.
+
+## Live input
+
+```sh
+python3 client/nxhid.py 192.168.1.50 live
+```
+
+Requires Tkinter. Type in the focused window; Escape stops forwarding and losing
+focus releases keys. Live mode forwards physical key states, with lock state
+controlled by the target. Run `python3 client/nxhid.py --help` for other commands.
+
+On macOS, use Python with Tk 8.6 or newer. With Homebrew:
+
+```sh
+brew install python-tk@3.14
+python3.14 client/nxhid.py 192.168.1.50 live
+```
+
+## Build
+
+Install devkitPro's Switch toolchain (`devkitA64`, `libnx`, and Switch tools).
+The default location is `/opt/devkitpro`; override `DEVKITPRO` if needed.
+
+```sh
+make -j4
+make test
+make package
+```
+
+The bundle is `dist/nxhid-0.1.0.zip`. Host tests require a C compiler and local TCP
+socket access, but do not need the Switch SDK. Use the bundled `.nro` and Python
+sender together.

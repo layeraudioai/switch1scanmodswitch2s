@@ -1,0 +1,17 @@
+[
+  {
+    "name": "ftpd-sb",
+    "description": "FTP file transfer for romfs, save, and tmp",
+    "icon": "K:\\ns1modns2\\hello\\runs\\latest\\launcher-auto-catalog-icon-0.png"
+  },
+  {
+    "name": "Hello World",
+    "description": "A simple first homebrew app",
+    "icon": "K:\\ns1modns2\\hello\\runs\\latest\\launcher-auto-catalog-icon-1.png"
+  },
+  {
+    "name": "Media Player Suite",
+    "description": "Full media playback suite for MP3, FLAC, WAV, OPUS, MP4, and WEBM files",
+    "icon": "K:\\ns1modns2\\hello\\runs\\latest\\launcher-auto-catalog-icon-2.png"
+  }
+]

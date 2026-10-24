@@ -1,0 +1,121 @@
+{
+  "session": "latest",
+  "started": "2026-10-24T22:10:48.838Z",
+  "imports": {
+    "_ZN2nn2vi10InitializeEv": {
+      "target": 339565799424,
+      "unresolved": false,
+      "region": {
+        "address": 339563319296,
+        "size": 45989888,
+        "type": 3,
+        "attributes": 0,
+        "permissions": 5,
+        "ipcReferences": 0,
+        "deviceReferences": 0,
+        "result": 0
+      }
+    },
+    "_ZN2nn2vi18OpenDefaultDisplayEPPNS0_7DisplayE": {
+      "target": 339565799904,
+      "unresolved": false,
+      "region": {
+        "address": 339563319296,
+        "size": 45989888,
+        "type": 3,
+        "attributes": 0,
+        "permissions": 5,
+        "ipcReferences": 0,
+        "deviceReferences": 0,
+        "result": 0
+      }
+    },
+    "_ZN2nn2vi11CreateLayerEPPNS0_5LayerEPNS0_7DisplayE": {
+      "target": 339565800208,
+      "unresolved": false,
+      "region": {
+        "address": 339563319296,
+        "size": 45989888,
+        "type": 3,
+        "attributes": 0,
+        "permissions": 5,
+        "ipcReferences": 0,
+        "deviceReferences": 0,
+        "result": 0
+      }
+    },
+    "_ZN2nn2vi12DestroyLayerEPNS0_5LayerE": {
+      "target": 339431000144,
+      "unresolved": true,
+      "region": {
+        "address": 339428265984,
+        "size": 2744320,
+        "type": 3,
+        "attributes": 0,
+        "permissions": 5,
+        "ipcReferences": 0,
+        "deviceReferences": 0,
+        "result": 0
+      }
+    },
+    "_ZN2nn2vi12CloseDisplayEPNS0_7DisplayE": {
+      "target": 339431000144,
+      "unresolved": true,
+      "region": {
+        "address": 339428265984,
+        "size": 2744320,
+        "type": 3,
+        "attributes": 0,
+        "permissions": 5,
+        "ipcReferences": 0,
+        "deviceReferences": 0,
+        "result": 0
+      }
+    },
+    "_ZN2nn2vi8FinalizeEv": {
+      "target": 339431000144,
+      "unresolved": true,
+      "region": {
+        "address": 339428265984,
+        "size": 2744320,
+        "type": 3,
+        "attributes": 0,
+        "permissions": 5,
+        "ipcReferences": 0,
+        "deviceReferences": 0,
+        "result": 0
+      }
+    },
+    "_ZN2nn2vi15GetNativeWindowEPPvPNS0_5LayerE": {
+      "target": 339565800944,
+      "unresolved": false,
+      "region": {
+        "address": 339563319296,
+        "size": 45989888,
+        "type": 3,
+        "attributes": 0,
+        "permissions": 5,
+        "ipcReferences": 0,
+        "deviceReferences": 0,
+        "result": 0
+      }
+    },
+    "nvnBootstrapLoader": {
+      "target": 339566960096,
+      "unresolved": false,
+      "region": {
+        "address": 339563319296,
+        "size": 45989888,
+        "type": 3,
+        "attributes": 0,
+        "permissions": 5,
+        "ipcReferences": 0,
+        "deviceReferences": 0,
+        "result": 0
+      }
+    }
+  },
+  "sdkService": 0,
+  "sdkServiceIsNull": true,
+  "completed": "2026-10-24T22:10:49.134Z"
+}
