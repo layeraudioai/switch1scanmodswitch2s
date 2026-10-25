@@ -9,6 +9,6 @@ ipconfig
 Set /P IPPC="Enter the displayed IP:"
 echo Enter into the DIRECT mode the "V=" line to pair the Switch 2 and PC.
 pause
-cd hello
+cd HBLauncher
 node server.js %IPPC%
 pause

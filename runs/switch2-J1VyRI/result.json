@@ -1,8 +1,0 @@
-{
-  "platform": 2,
-  "sourceSha256": "d5a5d87b464ce85640f7a3a1862c8e66e77cf54191eb0c6ee6afce0e6d17921f",
-  "started": "2026-10-24T20:09:57.005Z",
-  "verified": false,
-  "error": "listen EADDRNOTAVAIL: address not available 10.0.0.213:39380",
-  "completed": "2026-10-24T20:09:57.030Z"
-}
