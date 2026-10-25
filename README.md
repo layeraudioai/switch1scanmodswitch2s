@@ -1,3 +1,5 @@
+<img width="640" height="480" alt="HNI_0035" src="https://github.com/user-attachments/assets/92d7ac82-c4bc-4071-9f02-4c1f967c0e4d" />
+
 # NXHID
 
 Turn a homebrew-enabled Nintendo Switch into a USB keyboard controlled over Wi-Fi.
