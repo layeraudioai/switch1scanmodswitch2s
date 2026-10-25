@@ -10,5 +10,7 @@ Set /P IPPC="Enter the displayed IP:"
 echo Enter into the DIRECT mode the "V=" line to pair the Switch 2 and PC.
 pause
 cd HBLauncher
+:HBL
 node server.js %IPPC%
+goto :HBL
 pause
