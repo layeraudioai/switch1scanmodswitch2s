@@ -49,8 +49,9 @@ async function main(directory){
   check((await call('GetAudioOutSampleRate',audio))===48000n&&(await call('GetAudioOutChannelCount',audio))===2n&&(await call('GetAudioOutSampleFormat',audio))===2n,'Unexpected game audio format');
   const descriptors=new Set(Array.from({length:bufferCount},(_,i)=>base+0x400+i*0x40)),free=new Set(descriptors),bufferAddress=new Map(Array.from(descriptors,(_,i)=>[base+0x400+i*0x40,base+65536+i*bufferBytes]));
   async function release(){for(let i=0;i<bufferCount;i++){const address=await call('GetReleasedAudioOutBuffer',audio);if(address===0n)break;check(descriptors.has(Number(address)),'Unknown sound descriptor');free.add(Number(address));}}
-  let currentStream=null;
+  let currentStream=null,streamCounter=0;
   async function play(kind){
+   const myId=++streamCounter;
    if(currentStream){currentStream.destroy();currentStream=null;}
    const file=report.package?.effects?.[String(kind)];if(!file)return;
    const stat=await fs.stat(file);check(stat.isFile()&&stat.size>0&&stat.size%4===0,'Invalid stereo PCM asset');
@@ -58,26 +59,30 @@ async function main(directory){
    console.log(`[AUDIO] Playing 48 kHz stereo PCM, event ${kind}`);
    const iterator=stream[Symbol.asyncIterator]();let pending=Buffer.alloc(0),eof=false;
    async function nextChunk(){
-    while(pending.length<bufferBytes&&!eof&&currentStream===stream){const item=await iterator.next();if(item.done)eof=true;else pending=pending.length?Buffer.concat([pending,item.value]):item.value;}
+    while(pending.length<bufferBytes&&!eof&&currentStream===stream&&streamCounter===myId){const item=await iterator.next();if(item.done)eof=true;else pending=pending.length?Buffer.concat([pending,item.value]):item.value;}
     if(!pending.length)return null;
     let length=Math.min(bufferBytes,pending.length);length-=length%4;if(!length){check(eof,'PCM stream split on an invalid frame boundary');return null;}
     const chunk=pending.subarray(0,length);pending=pending.subarray(length);return chunk;
    }
    try{
-    while(!stop&&currentStream===stream){
+    while(!stop&&currentStream===stream&&streamCounter===myId){
      const chunk=await nextChunk();if(!chunk)break;
-     while(!free.size&&!stop&&currentStream===stream){await release();if(!free.size)await new Promise(r=>setTimeout(r,5));}
-     if(stop||currentStream!==stream)break;
+     while(!free.size&&!stop&&currentStream===stream&&streamCounter===myId){await release();if(!free.size)await new Promise(r=>setTimeout(r,5));}
+     if(stop||currentStream!==stream||streamCounter!==myId)break;
      const descriptor=free.values().next().value,address=bufferAddress.get(descriptor);
      await rpc.write(address,chunk);await call('SetAudioOutBufferInfo',descriptor,address,bufferBytes,chunk.length);
      check((await call('AppendAudioOutBuffer',audio,descriptor))===1n,'Sound buffer rejected');free.delete(descriptor);
      if(!started){check((await call('StartAudioOut',audio))===0n,'Sound playback failed');started=true;}
      report.played++;report.history.push({kind,file:path.basename(file),time:new Date().toISOString()});report.history=report.history.slice(-64);
     }
-   }finally{if(currentStream===stream)currentStream=null;stream.destroy();}
-   // Let the hardware drain queued PCM before accepting another track.
-   while(started&&free.size<bufferCount&&!stop){await release();await new Promise(r=>setTimeout(r,5));}
-   if(started){check((await call('StopAudioOut',audio))===0n,'Sound stop failed');started=false;await call('FlushAudioOutBuffers',audio);await release();}
+   }finally{
+    if(currentStream===stream&&streamCounter===myId){
+     currentStream=null;
+     while(started&&free.size<bufferCount&&!stop){await release();await new Promise(r=>setTimeout(r,5));}
+     if(started){try{await call('StopAudioOut',audio);started=false;await call('FlushAudioOutBuffers',audio);await release();}catch(e){}}
+    }
+    stream.destroy();
+   }
   }
 
   report.ready=true;await save();console.log('Game sound effects ready.');

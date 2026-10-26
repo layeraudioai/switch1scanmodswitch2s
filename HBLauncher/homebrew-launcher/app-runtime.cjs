@@ -39,33 +39,6 @@ async function create({rpc,menu,directory,prepareApp=prepare}){
   if(runtime.active){
    if(state.readUInt32LE(1016)!==0)return returnToMenu();
    await runtime.active.service?.afterBatch(state);
-   if(runtime.active.app.id==='media-machine'){
-    try{
-     const pieceState=await rpc.read(mapped+800,16);
-     const loadedFrame=pieceState.readInt32LE(0);
-     const targetFrame=pieceState.readInt32LE(4);
-     const clipIndex=pieceState.readInt32LE(12);
-     if(loadedFrame!==targetFrame){
-      const sourcesFile=path.join(runtime.active.app.root,'assets','video-sources.json');
-      const sources=JSON.parse(await fs.readFile(sourcesFile,'utf8'));
-      const info=sources[String(clipIndex)];
-      if(info){
-       const absoluteSource=path.resolve(runtime.active.app.root,info.source);
-       const t=targetFrame/info.fps;
-       const tempFrame=path.join(directory,'video-frame-'+Date.now()+'.rgb565');
-       const {execFileSync}=require('node:child_process');
-       execFileSync('ffmpeg',['-v','error','-ss',String(t),'-i',absoluteSource,'-map','0:v:0','-an','-sn','-dn','-vf',`scale=1920:1080:force_original_aspect_ratio=decrease:flags=bilinear,pad=1920:1080:(ow-iw)/2:(oh-ih)/2`,'-frames:v','1','-f','rawvideo','-pix_fmt','rgb565le','-y',tempFrame],{timeout:5000});
-       const frameBytes=await fs.readFile(tempFrame);
-       await fs.unlink(tempFrame).catch(()=>{});
-       if(frameBytes.length===1920*1080*2){
-        await rpc.write(mapped+1024+info.offset,frameBytes);
-        const updateBuf=Buffer.alloc(4);updateBuf.writeInt32LE(targetFrame);
-        await rpc.write(mapped+800,updateBuf);
-       }
-      }
-     }
-    }catch(e){/* ignore frame swapping errors */}
-   }
    return runtime.active.gpu.commands[0];
   }
   const request=state.readUInt32LE(1012);

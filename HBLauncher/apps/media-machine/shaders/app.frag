@@ -56,21 +56,19 @@ void main(){
         color = mix(color, vec3(.90, .95, 1.0), text(p, vec2(195, yPos + 7), fileTexts[i]));
     }
 
-    // Dynamically swapped video frames in c.atlas via piece auto-swapping
+    // Full-screen 1920x1080 video playback
     if (c.game.y == 1u && c.game.z < uint(NUM_FILES)) {
         ivec3 video = VIDEO_META[int(c.game.z)];
         if (video.y > 0) {
-            vec2 videoPos = p - vec2(960.0, 480.0);
-            if (abs(videoPos.x) <= 480.0 && abs(videoPos.y) <= 270.0) {
-                vec2 uv = (videoPos + vec2(480.0, 270.0)) / vec2(960.0, 540.0);
-                ivec2 pixel = clamp(ivec2(uv * vec2(1920.0, 1080.0)), ivec2(0), ivec2(1919, 1079));
-                uint byteIndex = uint(video.x) + uint(pixel.y * 1920 + pixel.x) * 2u;
-                uint packed = (c.atlas[byteIndex >> 2u] >> ((byteIndex & 2u) * 8u)) & 65535u;
-                vec3 rgb = vec3(float((packed >> 11u) & 31u) / 31.0,
-                                float((packed >> 5u) & 63u) / 63.0,
-                                float(packed & 31u) / 31.0);
-                color = rgb;
-            }
+            vec2 uv = p / vec2(1920.0, 1080.0);
+            ivec2 pixel = clamp(ivec2(uv * vec2(1920.0, 1080.0)), ivec2(0), ivec2(1919, 1079));
+            uint frame = uint(c.motion.x * float(video.z)) % uint(video.y);
+            uint byteIndex = uint(video.x) + (frame * 1920u * 1080u + uint(pixel.y * 1920 + pixel.x)) * 2u;
+            uint packed = (c.atlas[byteIndex >> 2u] >> ((byteIndex & 2u) * 8u)) & 65535u;
+            vec3 rgb = vec3(float((packed >> 11u) & 31u) / 31.0,
+                            float((packed >> 5u) & 63u) / 63.0,
+                            float(packed & 31u) / 31.0);
+            color = rgb;
         }
     }
 

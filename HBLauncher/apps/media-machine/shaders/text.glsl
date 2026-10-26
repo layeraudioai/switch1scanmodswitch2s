@@ -52,7 +52,7 @@ const ivec3 VIDEO_META[31] = ivec3[31](
     ivec3(0, 0, 0),
     ivec3(0, 0, 0),
     ivec3(0, 0, 0),
-    ivec3(2097152, 648000, 60),
+    ivec3(2097152, 1, 60),
     ivec3(0, 0, 0),
     ivec3(0, 0, 0),
     ivec3(0, 0, 0),
