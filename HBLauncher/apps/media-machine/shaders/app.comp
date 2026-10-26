@@ -7,7 +7,6 @@ layout(local_size_x=1) in;
 
 void main(){
     uint buttons = hbPressed();
-    c.motion.x += 1.0 / 60.0;
     c.state.z++;
     c.transition.x = max(0.0, c.transition.x - 1.0 / 15.0);
 
@@ -20,32 +19,36 @@ void main(){
     if (NUM_FILES > 0 && (buttons & HB_DOWN) != 0u) {
         c.game.x = (c.game.x + 1u) % fileCount;
     }
-    // A button selects exactly the manifest entry with this stable 1-based ID.
+    // A button: Play selected media
     if (NUM_FILES > 0 && (buttons & HB_A) != 0u) {
         c.game.y = 1u;
         c.game.z = c.game.x;
         c.motion.x = 0.0; // Start video time at the selected clip's first frame.
         hbSound(c.game.x + 1u);
     }
-    // X button: Clear selection
-    if ((buttons & HB_X) != 0u) {
-        c.game.y = 0u;
+    // Y button: Pause / Resume toggle
+    if ((buttons & HB_Y) != 0u) {
+        c.motion.y = (c.motion.y == 0.0) ? 1.0 : 0.0;
     }
-    // Exit via B or Minus
-    if (hbConnected() && (buttons & (HB_B | HB_MINUS)) != 0u) {
+    // X button: Queue next (move selection to next song without interrupting playback)
+    if (NUM_FILES > 0 && (buttons & HB_X) != 0u) {
+        c.game.x = (c.game.x + 1u) % fileCount;
+    }
+    // B button: Stop playing if playing, or quit if already stopped. Minus button: quit.
+    if (hbConnected() && (buttons & HB_B) != 0u) {
+        if (c.game.y == 1u) {
+            c.game.y = 0u; // Stop playing
+        } else {
+            hbExit(); // Quit
+        }
+    }
+    if (hbConnected() && (buttons & HB_MINUS) != 0u) {
         hbExit();
     }
 
-    // Request video frame / piece update during playback
-    if (c.game.y == 1u && c.game.z < uint(NUM_FILES)) {
-        ivec3 video = VIDEO_META[int(c.game.z)];
-        if (video.y > 0) {
-            uint targetFrame = uint(c.motion.x * float(video.z)) % uint(video.y);
-            if (uint(c.piece.x) != targetFrame || uint(c.piece.w) != c.game.z) {
-                c.piece.y = int(targetFrame);
-                c.piece.w = int(c.game.z);
-            }
-        }
+    // Advance playback time only if not paused
+    if (c.game.y == 1u && c.motion.y == 0.0) {
+        c.motion.x += 1.0 / 60.0;
     }
 
     hbEndFrame();

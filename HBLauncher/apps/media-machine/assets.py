@@ -87,8 +87,8 @@ for position, i in enumerate(video_indices):
     with tempfile.NamedTemporaryFile(prefix=f'media-machine-vid-{i}-', suffix='.rgb565', dir=pieces_dir, delete=False) as tmp:
         temp_name = tmp.name
     command = [
-        'ffmpeg', '-v', 'error', '-i', str(source), '-map', '0:v:0', '-an', '-sn', '-dn',
-        '-vf', f'fps={frame_rate},scale={frame_width}:{frame_height}:force_original_aspect_ratio=increase,crop={frame_width}:{frame_height}',
+        'ffmpeg', '-v', 'error', '-i', str(source), '-an', '-sn', '-dn', '-q', '0', '-lossless', 'true',
+        '-filter_complex:v', f'copy,fps={frame_rate},scale={frame_width}:{frame_height}:force_original_aspect_ratio=increase,crop={frame_width}:{frame_height}',
         '-f', 'rawvideo', '-pix_fmt', 'rgb565le', '-y', temp_name,
     ]
     try:
@@ -146,7 +146,8 @@ for i, source in enumerate(files, 1):
         temp_name = tmp.name
     try:
         command = [
-            'ffmpeg', '-v', 'error', '-i', str(source), '-map', '0:a:0', '-vn',
+            'ffmpeg', '-v', 'error', '-i', str(source), '-vn', '-q', '0', '-lossless', 'true',
+            '-filter_complex:a', 'acopy,bass=g=12:f=110',
             '-acodec', 'pcm_s16le', '-f', 's16le', '-ar', '48000', '-ac', '2', '-y', temp_name,
         ]
         try:
