@@ -149,6 +149,11 @@ async function main() {
       stdio: 'inherit'
     });
 
+    const audioChild = spawn(process.execPath, [path.join(__dirname, 'homebrew-launcher/game-audio.cjs'), directory], {
+      cwd: __dirname,
+      stdio: 'inherit'
+    });
+
     const rpc = rpcProxy(directory);
     const mapped = launcherData.controls.mapped;
 
@@ -168,11 +173,13 @@ async function main() {
       };
       connected.connection.socket.once('close', done);
       loopChild.once('close', done);
+      audioChild.once('close', done);
       process.once('SIGINT', done);
       process.once('SIGTERM', done);
     });
 
     loopChild.kill('SIGTERM');
+    audioChild.kill('SIGTERM');
 
   } catch (error) {
     console.error('Error in server execution:', error);

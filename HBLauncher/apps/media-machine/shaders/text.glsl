@@ -1,8 +1,8 @@
 const ivec4 TEXT_TITLE = ivec4(2, 2, 720, 27);
 const ivec4 TEXT_SUBTITLE = ivec4(2, 37, 598, 18);
-const ivec4 TEXT_STATUS_READY = ivec4(2, 63, 581, 15);
-const ivec4 TEXT_STATUS_SELECTED = ivec4(2, 86, 450, 15);
-const ivec4 TEXT_CONTROLS = ivec4(2, 109, 605, 18);
+const ivec4 TEXT_STATUS_READY = ivec4(2, 63, 601, 15);
+const ivec4 TEXT_STATUS_SELECTED = ivec4(2, 86, 508, 15);
+const ivec4 TEXT_CONTROLS = ivec4(2, 109, 568, 18);
 const int NUM_FILES = 19;
 const ivec4 TEXT_FILE_0 = ivec4(2, 135, 468, 19);
 const ivec4 TEXT_FILE_1 = ivec4(2, 162, 326, 19);

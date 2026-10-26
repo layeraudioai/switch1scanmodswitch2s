@@ -15,15 +15,29 @@ function synth(kind){
  return pcm;
 }
 async function main(directory){
- directory=path.resolve(directory);const rpc=require(path.join(directory,'shared/rpc.cjs')),source=JSON.parse(await fs.readFile(path.join(directory,'game-audio-source.json')));
- check(source.session===rpc.a.session,'Game audio belongs to another session');
- const file=path.join(directory,'game-audio.json'),report={session:rpc.a.session,started:new Date().toISOString(),functions:{},resourcesRetained:true,played:0,history:[]};await fs.writeFile(file,'{}',{flag:'wx'});
+ directory=path.resolve(directory);const rpc=require(path.join(directory,'shared/rpc.cjs'));
+ 
+ let stop=false,started=false,audio;process.on('SIGINT',()=>stop=true);process.on('SIGTERM',()=>stop=true);
+ 
+ console.log('[AUDIO] Waiting for game-audio-source.json...');
+ let source;
+ while(!stop){
+  try {
+   source = JSON.parse(await fs.readFile(path.join(directory,'game-audio-source.json')));
+   if (source && source.session === rpc.a.session) break;
+  } catch(e) {}
+  await new Promise(r => setTimeout(r, 100));
+ }
+ if(stop) return;
+ console.log('[AUDIO] Audio source session detected.');
+
+ const file=path.join(directory,'game-audio.json'),report={session:rpc.a.session,started:new Date().toISOString(),functions:{},resourcesRetained:true,played:0,history:[]};
+ await fs.writeFile(file,'{}',{flag:'wx'});
  const save=()=>fs.writeFile(file,JSON.stringify(report,null,2));const sdkImage=require('../smilebasic/reference/sdk-checks.cjs');
  async function call(name,...args){
   if(!report.functions[name]){const matches=symbols.filter(s=>s.name.includes(name));check(matches.length===1,'Ambiguous sound symbol '+name);const s=matches[0],address=rpc.a.sdk+s.offset;await rpc.request({command:'verify-function',address,hex:sdkImage.bytes(s.offset,Math.min(32,s.size)).toString('hex')});report.functions[name]=address;}
   return (await rpc.callAddress(report.functions[name],args)).result;
  }
- let stop=false,audio,started=false;process.on('SIGINT',()=>stop=true);process.on('SIGTERM',()=>stop=true);
  try{
   const bytes=65536+31*131072,temp=rpc.a.scratch+0x10000,saved=await rpc.read(temp,8);let base;
   try{check((await rpc.call(5732112,[temp,65536,bytes])).result===0n,'Sound allocation failed');base=Number((await rpc.read(temp,8)).readBigUInt64LE());}finally{await rpc.write(temp,saved);}
@@ -34,20 +48,130 @@ async function main(directory){
   check((await call('GetAudioOutSampleRate',audio))===48000n&&(await call('GetAudioOutChannelCount',audio))===2n&&(await call('GetAudioOutSampleFormat',audio))===2n,'Unexpected game audio format');
   const descriptors=new Set(Array.from({length:8},(_,i)=>base+0x400+i*0x40)),free=new Set(descriptors);
   async function release(){for(let i=0;i<8;i++){const address=await call('GetReleasedAudioOutBuffer',audio);if(address===0n)break;check(descriptors.has(Number(address)),'Unknown sound descriptor');free.add(Number(address));}}
+  
+  let currentFFmpeg = null;
+
   async function play(kind){
-   if(!sounds[kind]||free.size===0||free.size<6)return;
-   if((kind===1||kind===2)&&free.size<8)return;
-   const descriptor=free.values().next().value,sound=sounds[kind];await call('SetAudioOutBufferInfo',descriptor,sound.address,131072,sound.bytes);
-   check((await call('AppendAudioOutBuffer',audio,descriptor))===1n,'Sound buffer rejected');free.delete(descriptor);if(!started){check((await call('StartAudioOut',audio))===0n,'Sound playback failed');started=true;}report.played++;report.history.push({kind,time:new Date().toISOString()});report.history=report.history.slice(-64);await save();
+   if (currentFFmpeg) {
+    try { currentFFmpeg.kill(); } catch(e) {}
+    currentFFmpeg = null;
+   }
+
+   const packageInfo = report.package;
+   if(!packageInfo) return;
+   const appContentDir = path.resolve(directory, '../../apps', packageInfo.id, 'content');
+   let files = [];
+   try {
+    const entries = await fs.readdir(appContentDir);
+    files = entries.filter(name => !name.startsWith('.')).sort();
+   } catch(e) {}
+   
+   const fileIndex = kind - 1;
+   if (fileIndex < 0 || fileIndex >= files.length) return;
+   const mediaFile = path.join(appContentDir, files[fileIndex]);
+   
+   console.log(`[AUDIO] Streaming media file on-the-fly: ${mediaFile}`);
+   
+   const {spawn} = require('node:child_process');
+   const ffmpegProcess = spawn('ffmpeg', [
+    '-i', mediaFile,
+    '-f', 's16le',
+    '-acodec', 'pcm_s16le',
+    '-ar', '48000',
+    '-ac', '2',
+    'pipe:1'
+   ], {stdio: ['ignore', 'pipe', 'pipe']});
+   
+   currentFFmpeg = ffmpegProcess;
+   
+   ffmpegProcess.stderr.on('data', (data) => {
+    console.error(`[FFMPEG] ${data.toString().trim()}`);
+   });
+   
+   try {
+    let chunkQueue = [];
+    let isFinished = false;
+    
+    ffmpegProcess.stdout.on('data', (data) => {
+     chunkQueue.push(data);
+    });
+    ffmpegProcess.on('close', (code) => {
+     console.log(`[FFMPEG] Process exited with code ${code}`);
+     isFinished = true;
+    });
+    
+    async function readNextChunk() {
+     while (chunkQueue.length === 0 && !isFinished && !stop && currentFFmpeg === ffmpegProcess) {
+      await new Promise(r => setTimeout(r, 20));
+     }
+     if (currentFFmpeg !== ffmpegProcess) return null;
+     if (chunkQueue.length === 0) return null;
+     
+     let totalLen = chunkQueue.reduce((acc, c) => acc + c.length, 0);
+     let combined = Buffer.concat(chunkQueue, totalLen);
+     chunkQueue = [];
+     
+     if (combined.length > 131072) {
+      chunkQueue.push(combined.subarray(131072));
+      combined = combined.subarray(0, 131072);
+     }
+     
+     if (combined.length < 131072) {
+      const padded = Buffer.alloc(131072);
+      combined.copy(padded);
+      combined = padded;
+     }
+     
+     const rem = combined.length % 4;
+     if (rem !== 0) combined = combined.subarray(0, combined.length - rem);
+     
+     return combined;
+    }
+    
+    const soundAddress = base + 65536 + (Math.max(1, kind) - 1) * 131072;
+    
+    while (!stop && currentFFmpeg === ffmpegProcess) {
+     const chunk = await readNextChunk();
+     if (!chunk) break;
+     
+     while(free.size === 0 && !stop && currentFFmpeg === ffmpegProcess) {
+      await release();
+      if(free.size === 0) await new Promise(r => setTimeout(r, 10));
+     }
+     if(stop || currentFFmpeg !== ffmpegProcess) break;
+     
+     const descriptor = free.values().next().value;
+     await rpc.write(soundAddress, chunk);
+     await call('SetAudioOutBufferInfo', descriptor, soundAddress, 131072, chunk.length);
+     check((await call('AppendAudioOutBuffer', audio, descriptor)) === 1n, 'Sound buffer rejected');
+     free.delete(descriptor);
+     
+     if(!started) {
+      check((await call('StartAudioOut', audio)) === 0n, 'Sound playback failed');
+      started = true;
+     }
+     
+     report.played++;
+     report.history.push({kind, file: files[fileIndex], time: new Date().toISOString()});
+     report.history = report.history.slice(-64);
+     await save();
+    }
+   } finally {
+    if (currentFFmpeg === ffmpegProcess) currentFFmpeg = null;
+    try { ffmpegProcess.kill(); } catch(e) {}
+   }
   }
+
   report.ready=true;await save();console.log('Game sound effects ready.');
   let sequence=-1,token=null;
   async function loadEffects(packageInfo){
    if(started){check((await call('StopAudioOut',audio))===0n,'Sound pause failed');started=false;}
    await call('FlushAudioOutBuffers',audio);await release();check(Number(await call('GetAudioOutBufferCount',audio))===0,'Sound queue did not drain');free.clear();for(const descriptor of descriptors)free.add(descriptor);sounds={};
    for(const [key,file]of Object.entries(packageInfo?.effects||{})){
-    const kind=Number(key);check(Number.isInteger(kind)&&kind>=1&&kind<=31,'Invalid sound event id');const pcm=await fs.readFile(file);check(pcm.length>0&&pcm.length<=131072&&pcm.length%4===0,'Invalid package PCM');
-    const address=base+65536+(kind-1)*131072,bytes=Buffer.alloc(131072);pcm.copy(bytes);await rpc.write(address,bytes);check((await rpc.read(address,bytes.length)).equals(bytes),'Sound upload differs');sounds[kind]={address,bytes:pcm.length};
+    const kind=Number(key);check(Number.isInteger(kind)&&kind>=1&&kind<=31,'Invalid sound event id');
+    const stat=await fs.stat(file);check(stat.size>0&&stat.size%4===0,'Invalid package PCM size');
+    const address=base+65536+(kind-1)*131072;
+    sounds[kind]={address,file,size:stat.size};
    }
    token=packageInfo?.fingerprint||null;sequence=-1;report.package=packageInfo?{id:packageInfo.id,fingerprint:token,effects:Object.keys(sounds)}:null;await save();
   }
@@ -55,6 +179,9 @@ async function main(directory){
    const current=JSON.parse(await fs.readFile(path.join(directory,'game-audio-source.json')));check(current.session===rpc.a.session,'Sound source session changed');
    if((current.package?.fingerprint||null)!==token)await loadEffects(current.package||null);
    await release();const state=await rpc.read(source.mapped+784,208),next=state.readUInt32LE(192),kind=state.readUInt32LE(196);
+   if (next !== sequence) {
+    console.log(`[AUDIO POLL] Event detected! next: ${next}, sequence: ${sequence}, kind: ${kind}`);
+   }
    if(next!==sequence){sequence=next;if(next!==0)await play(kind);}
    await new Promise(resolve=>setTimeout(resolve,50));
   }
