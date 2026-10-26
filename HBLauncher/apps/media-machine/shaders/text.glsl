@@ -1,6 +1,6 @@
 const ivec4 TEXT_TITLE = ivec4(2, 2, 600, 27);
 const ivec4 TEXT_SUBTITLE = ivec4(2, 37, 399, 18);
-const ivec4 TEXT_STATUS_READY = ivec4(2, 63, 342, 15);
+const ivec4 TEXT_STATUS_READY = ivec4(2, 63, 382, 15);
 const ivec4 TEXT_STATUS_SELECTED = ivec4(2, 86, 284, 15);
 const ivec4 TEXT_CONTROLS = ivec4(2, 109, 441, 18);
 const int NUM_FILES = 20;
@@ -52,7 +52,7 @@ const ivec3 VIDEO_META[31] = ivec3[31](
     ivec3(0, 0, 0),
     ivec3(0, 0, 0),
     ivec3(0, 0, 0),
-    ivec3(2097152, 100, 5),
+    ivec3(2097152, 648000, 60),
     ivec3(0, 0, 0),
     ivec3(0, 0, 0),
     ivec3(0, 0, 0),

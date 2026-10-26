@@ -21,7 +21,7 @@ void main(){
         c.game.x = (c.game.x + 1u) % fileCount;
     }
     // A button selects exactly the manifest entry with this stable 1-based ID.
-    if (c.game.y == 0u && NUM_FILES > 0 && (buttons & HB_A) != 0u) {
+    if (NUM_FILES > 0 && (buttons & HB_A) != 0u) {
         c.game.y = 1u;
         c.game.z = c.game.x;
         c.motion.x = 0.0; // Start video time at the selected clip's first frame.
@@ -34,6 +34,18 @@ void main(){
     // Exit via B or Minus
     if (hbConnected() && (buttons & (HB_B | HB_MINUS)) != 0u) {
         hbExit();
+    }
+
+    // Request video frame / piece update during playback
+    if (c.game.y == 1u && c.game.z < uint(NUM_FILES)) {
+        ivec3 video = VIDEO_META[int(c.game.z)];
+        if (video.y > 0) {
+            uint targetFrame = uint(c.motion.x * float(video.z)) % uint(video.y);
+            if (uint(c.piece.x) != targetFrame || uint(c.piece.w) != c.game.z) {
+                c.piece.y = int(targetFrame);
+                c.piece.w = int(c.game.z);
+            }
+        }
     }
 
     hbEndFrame();

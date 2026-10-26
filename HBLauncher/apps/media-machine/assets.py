@@ -32,7 +32,7 @@ y = 2
 items = [
     ('TITLE', 'Media Machine - Video and Audio', 36),
     ('SUBTITLE', 'Select with Up/Down; A plays video or audio', 18),
-    ('STATUS_READY', ('Videos are predecoded to 160x90 at 5 fps.' if video_files else
+    ('STATUS_READY', ('Videos are predecoded to 1920x1080 at 60 fps.' if video_files else
                       'Add video or audio files to content/ to begin.'), 16),
     ('STATUS_SELECTED', 'Playing selected media on Switch 2', 16),
     ('CONTROLS', 'D-Pad: Navigate | A: Play | X: Stop | B/Minus: Exit', 18),
@@ -79,42 +79,53 @@ atlas_bytes = atlas.tobytes()
 video_payload = bytearray()
 video_meta = [(0, 0, 0) for _ in files]  # byte offset in data, frames, fps
 video_indices = [i for i, source in enumerate(files) if source.suffix.lower() in VIDEO_EXTENSIONS]
-# Stay inside the catalog's 7 MiB app-data cap with space for serialization.
-# Allocate the remaining budget fairly across remaining clips, reclaiming space
-# when a short clip ends early rather than permanently wasting its share.
-video_budget = max(0, 7 * 1024 * 1024 - len(atlas_bytes) - 16 * 1024)
-frame_width, frame_height, frame_rate = 160, 90, 5
+frame_width, frame_height, frame_rate = 1920, 1080, 60
 frame_bytes = frame_width * frame_height * 2
-remaining_budget = video_budget
+video_sources = {}
+
 for position, i in enumerate(video_indices):
     source = files[i]
-    clips_left = len(video_indices) - position
-    max_frames = min(100, (remaining_budget // clips_left) // frame_bytes)
-    if max_frames < 1:
-        raise RuntimeError('Not enough app data storage for even one decoded video frame')
+    # Probe duration in seconds (default to 3 hours = 10800s for movie files if probe fails)
+    duration = 10800.0
+    try:
+        res = subprocess.run(
+            ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', str(source)],
+            captureoutput=True, text=True, check=True, timeout=10
+        )
+        d = float(res.stdout.strip())
+        if d > 0:
+            duration = d
+    except Exception:
+        pass
+    total_frames = max(1, int(duration * frame_rate))
+
+    # Decode only the first frame (frame 0) into atlas for instant startup
     with tempfile.NamedTemporaryFile(prefix='media-machine-', suffix='.rgb565', dir=root / 'assets', delete=False) as tmp:
         temp_name = tmp.name
     command = [
         'ffmpeg', '-v', 'error', '-i', str(source), '-map', '0:v:0', '-an', '-sn', '-dn',
-        '-vf', f'fps={frame_rate},scale={frame_width}:{frame_height}:force_original_aspect_ratio=decrease:flags=bilinear,pad={frame_width}:{frame_height}:(ow-iw)/2:(oh-ih)/2',
-        '-frames:v', str(max_frames), '-f', 'rawvideo', '-pix_fmt', 'rgb565le', '-y', temp_name,
+        '-vf', f'scale={frame_width}:{frame_height}:force_original_aspect_ratio=decrease:flags=bilinear,pad={frame_width}:{frame_height}:(ow-iw)/2:(oh-ih)/2',
+        '-frames:v', '1', '-f', 'rawvideo', '-pix_fmt', 'rgb565le', '-y', temp_name,
     ]
     try:
         subprocess.run(command, check=True, timeout=1800)
         decoded_size = Path(temp_name).stat().st_size
         if not decoded_size or decoded_size % frame_bytes:
             raise RuntimeError(f'FFmpeg produced an incomplete RGB565 frame for {source.name}')
-        frame_count = decoded_size // frame_bytes
         offset = len(atlas_bytes) + len(video_payload)
-        # Copy in chunks, avoiding a full decoded clip copy and Python per-pixel loops.
         with Path(temp_name).open('rb') as decoded:
             while chunk := decoded.read(256 * 1024):
                 video_payload.extend(chunk)
-        video_meta[i] = (offset, frame_count, frame_rate)
-        remaining_budget -= decoded_size
-        print(f'Decoded {source.name}: {frame_count} frames at {frame_width}x{frame_height}/{frame_rate}fps ({decoded_size:,} bytes)')
+        video_meta[i] = (offset, total_frames, frame_rate)
+        video_sources[str(i)] = {
+            'source': str(source.relative_to(root)),
+            'offset': offset,
+            'fps': frame_rate,
+            'totalFrames': total_frames
+        }
+        print(f'Prepared {source.name}: {total_frames} frames ({duration:.1f}s) at {frame_width}x{frame_height}/{frame_rate}fps')
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
-        raise RuntimeError(f'Could not decode video {source.name}; verify it contains a playable video stream') from exc
+        raise RuntimeError(f'Could not process video {source.name}; verify it contains a playable video stream') from exc
     finally:
         Path(temp_name).unlink(missing_ok=True)
 
@@ -127,6 +138,7 @@ header.append(',\n'.join(f'    ivec3({offset}, {count}, {fps})' for offset, coun
 header.append(');')
 (root / 'assets/text.bin').write_bytes(atlas_bytes + video_payload)
 (root / 'shaders/text.glsl').write_text('\n'.join(header) + '\n')
+(root / 'assets/video-sources.json').write_text(json.dumps(video_sources, indent=2) + '\n')
 
 audio_files = [p for p in files if p.suffix.lower() in AUDIO_EXTENSIONS]
 audio_effects = {}
