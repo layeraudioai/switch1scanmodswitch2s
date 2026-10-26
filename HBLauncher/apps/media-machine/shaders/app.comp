@@ -36,5 +36,17 @@ void main(){
         hbExit();
     }
 
+    // Request video frame / piece update during playback
+    if (c.game.y == 1u && c.game.z < uint(NUM_FILES)) {
+        ivec3 video = VIDEO_META[int(c.game.z)];
+        if (video.y > 0) {
+            uint targetFrame = uint(c.motion.x * float(video.z)) % uint(video.y);
+            if (uint(c.piece.x) != targetFrame || uint(c.piece.w) != c.game.z) {
+                c.piece.y = int(targetFrame);
+                c.piece.w = int(c.game.z);
+            }
+        }
+    }
+
     hbEndFrame();
 }

@@ -39,6 +39,31 @@ async function create({rpc,menu,directory,prepareApp=prepare}){
   if(runtime.active){
    if(state.readUInt32LE(1016)!==0)return returnToMenu();
    await runtime.active.service?.afterBatch(state);
+   if(runtime.active.app.id==='media-machine'){
+    try{
+     const pieceState=await rpc.read(mapped+800,16);
+     const loadedFrame=pieceState.readInt32LE(0);
+     const targetFrame=pieceState.readInt32LE(4);
+     const clipIndex=pieceState.readInt32LE(12);
+     if(loadedFrame!==targetFrame){
+      const piecesFile=path.join(runtime.active.app.root,'assets','video-pieces.json');
+      const manifest=JSON.parse(await fs.readFile(piecesFile,'utf8'));
+      const clipInfo=manifest[String(clipIndex)];
+      if(clipInfo){
+       const pieceRelPath=clipInfo.pieces[String(targetFrame)];
+       if(pieceRelPath){
+        const absolutePiecePath=path.resolve(runtime.active.app.root,pieceRelPath);
+        const frameBytes=await fs.readFile(absolutePiecePath);
+        if(frameBytes.length===1920*1080*2){
+         await rpc.write(mapped+1024+clipInfo.offset,frameBytes);
+         const updateBuf=Buffer.alloc(4);updateBuf.writeInt32LE(targetFrame);
+         await rpc.write(mapped+800,updateBuf);
+        }
+       }
+      }
+     }
+    }catch(e){/* ignore piece swap errors */}
+   }
    return runtime.active.gpu.commands[0];
   }
   const request=state.readUInt32LE(1012);
