@@ -52,13 +52,17 @@ async function readApp(directory,{validate=true}={}){
     break;
    } catch (e) {}
   }
- const effects={},effectData={};
+ const effects={};
  check(m.audio===undefined||(m.audio.sampleRate===48000&&m.audio.channels===2&&m.audio.format==='s16le'),'Unsupported audio format');
  for(const [id,name] of Object.entries(m.audio?.effects||{})){
   check(/^(?:[1-9]|[12][0-9]|3[01])$/.test(id),'Sound event ids must be 1..31');
-  const item=await asset(root,name,10*1024*1024);check(item.bytes.length%4===0,'Invalid stereo PCM frame alignment');effects[id]=item.file;effectData[id]=item.bytes;hash.update(id).update(item.bytes);
+  check(typeof name==='string'&&name.length>0&&!path.isAbsolute(name)&&!name.split(/[\\\\/]/).includes('..'),'Asset path must stay inside its app');
+  const file=await fs.realpath(path.resolve(root,name));check(file.startsWith(root+path.sep),'Asset escapes its app folder');
+  const stat=await fs.stat(file);check(stat.isFile()&&stat.size>0&&stat.size<=512*1024*1024&&stat.size%4===0,'Invalid audio asset: '+name);
+  effects[id]=file;hash.update(id);
+  for await(const chunk of require('node:fs').createReadStream(file))hash.update(chunk);
  }
- return {id:m.id,name:m.name.trim(),version:m.version,description:m.description,root,manifest:m,files,effects,effectData,fingerprint:hash.digest('hex')};
+ return {id:m.id,name:m.name.trim(),version:m.version,description:m.description,root,manifest:m,files,effects,fingerprint:hash.digest('hex')};
 }
 async function scan(root=ROOT){
  root=path.resolve(root);let entries;try{entries=await fs.readdir(root,{withFileTypes:true});}catch(error){if(error.code==='ENOENT')return {root,apps:[],rejected:[]};throw error;}

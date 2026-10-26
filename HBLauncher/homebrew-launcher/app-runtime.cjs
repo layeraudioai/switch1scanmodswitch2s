@@ -11,7 +11,7 @@ async function create({rpc,menu,directory,prepareApp=prepare}){
   let effects={};
   if(app){
    const folder=path.join(directory,'loaded-apps',app.id+'-'+app.fingerprint.slice(0,16));await fs.mkdir(folder,{recursive:true});
-   for(const [id,bytes]of Object.entries(app.effectData)){const out=path.join(folder,id+'.pcm');await fs.writeFile(out,bytes);effects[id]=out;}
+   for(const [id,file]of Object.entries(app.effects)){effects[id]=file;}
   }
   await atomic(path.join(directory,'game-audio-source.json'),{session:rpc.a.session,mapped,package:app?{id:app.id,fingerprint:app.fingerprint,effects}:null});
  }

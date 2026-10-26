@@ -4,7 +4,7 @@
   "id": "media-machine",
   "name": "Media Machine",
   "version": "1.0.0",
-  "description": "Media file browser and client-side playback transfer app for Switch 2",
+  "description": "Browse and play local audio and short video clips on Switch 2",
   "icon": "assets/icon.png",
   "initialState": "assets/state.bin",
   "data": "assets/text.bin",
@@ -41,7 +41,8 @@
       "16": "assets/audio_16.pcm",
       "17": "assets/audio_17.pcm",
       "18": "assets/audio_18.pcm",
-      "19": "assets/audio_19.pcm"
+      "19": "assets/audio_19.pcm",
+      "20": "assets/audio_20.pcm"
     }
   }
 }

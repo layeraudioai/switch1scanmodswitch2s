@@ -20,7 +20,7 @@ void main(){
     color = mix(color, vec3(.95, .98, 1.0), text(p, vec2(960 - TEXT_TITLE.z / 2.0, 108), TEXT_TITLE));
     color = mix(color, vec3(.60, .80, .90), text(p, vec2(960 - TEXT_SUBTITLE.z / 2.0, 145), TEXT_SUBTITLE));
 
-    int selected = int(mod(float(c.game.x), float(NUM_FILES)));
+    int selected = NUM_FILES > 0 ? int(c.game.x % uint(NUM_FILES)) : 0;
     
     ivec4 fileTexts[32] = ivec4[32](
         TEXT_FILE_0, TEXT_FILE_1, TEXT_FILE_2, TEXT_FILE_3,
@@ -54,6 +54,26 @@ void main(){
             color = mix(color, vec3(.40, .95, .50), transBadge);
         }
         color = mix(color, vec3(.90, .95, 1.0), text(p, vec2(195, yPos + 7), fileTexts[i]));
+    }
+
+    // Predecoded video frames are RGB565 in the app data atlas. Frame timing
+    // follows the compute shader's monotonic 60 Hz clock; X stops playback.
+    if (c.game.y == 1u && c.game.z < uint(NUM_FILES)) {
+        ivec3 video = VIDEO_META[int(c.game.z)];
+        if (video.y > 0) {
+            vec2 videoPos = p - vec2(960.0, 480.0);
+            if (abs(videoPos.x) <= 480.0 && abs(videoPos.y) <= 270.0) {
+                vec2 uv = (videoPos + vec2(480.0, 270.0)) / vec2(960.0, 540.0);
+                ivec2 pixel = clamp(ivec2(uv * vec2(160.0, 90.0)), ivec2(0), ivec2(159, 89));
+                uint frame = uint(c.motion.x * float(video.z)) % uint(video.y);
+                uint byteIndex = uint(video.x) + (frame * 160u * 90u + uint(pixel.y * 160 + pixel.x)) * 2u;
+                uint packed = (c.atlas[byteIndex >> 2u] >> ((byteIndex & 2u) * 8u)) & 65535u;
+                vec3 rgb = vec3(float((packed >> 11u) & 31u) / 31.0,
+                                float((packed >> 5u) & 63u) / 63.0,
+                                float(packed & 31u) / 31.0);
+                color = rgb;
+            }
+        }
     }
 
     // Status Panel

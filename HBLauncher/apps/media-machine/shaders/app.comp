@@ -11,18 +11,21 @@ void main(){
     c.state.z++;
     c.transition.x = max(0.0, c.transition.x - 1.0 / 15.0);
 
-    // D-Pad Up / Down navigation
-    if ((buttons & HB_UP) != 0u) {
-        c.game.x = (c.game.x + uint(NUM_FILES) - 1u) % uint(NUM_FILES);
+    uint fileCount = uint(max(NUM_FILES, 1));
+    c.game.x = min(c.game.x, fileCount - 1u);
+    // D-pad navigation stays inert on an empty library placeholder.
+    if (NUM_FILES > 0 && (buttons & HB_UP) != 0u) {
+        c.game.x = (c.game.x + fileCount - 1u) % fileCount;
     }
-    if ((buttons & HB_DOWN) != 0u) {
-        c.game.x = (c.game.x + 1u) % uint(NUM_FILES);
+    if (NUM_FILES > 0 && (buttons & HB_DOWN) != 0u) {
+        c.game.x = (c.game.x + 1u) % fileCount;
     }
-    // A button: Select file and pass to Switch 2 for client-side playback
-    if ((buttons & HB_A) != 0u) {
-        c.game.y = 1u; // Selected / Transferred status flag
-        c.game.z = c.game.x; // Selected file index
-        hbSound(min(c.game.x + 1u, 31u));
+    // A button selects exactly the manifest entry with this stable 1-based ID.
+    if (c.game.y == 0u && NUM_FILES > 0 && (buttons & HB_A) != 0u) {
+        c.game.y = 1u;
+        c.game.z = c.game.x;
+        c.motion.x = 0.0; // Start video time at the selected clip's first frame.
+        hbSound(c.game.x + 1u);
     }
     // X button: Clear selection
     if ((buttons & HB_X) != 0u) {
