@@ -1,8 +1,8 @@
 {
   "format": "hblauncher.gpu-app",
   "abi": 1,
-  "id": "media-machine",
-  "name": "Media Machine",
+  "id": "media-machine-2",
+  "name": "Media Machine 2",
   "version": "1.0.0",
   "description": "Browse and play local audio and short video clips on Switch 2",
   "icon": "assets/icon.png",
@@ -22,6 +22,8 @@
     "sampleRate": 48000,
     "channels": 2,
     "format": "s16le",
-    "effects": {}
+    "effects": {
+      "1": "assets/audio_1.pcm"
+    }
   }
 }

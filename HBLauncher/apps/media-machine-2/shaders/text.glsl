@@ -1,11 +1,11 @@
 const ivec4 TEXT_TITLE = ivec4(2, 2, 600, 27);
 const ivec4 TEXT_SUBTITLE = ivec4(2, 37, 422, 18);
-const ivec4 TEXT_STATUS_READY = ivec4(2, 63, 358, 15);
+const ivec4 TEXT_STATUS_READY = ivec4(2, 63, 520, 15);
 const ivec4 TEXT_STATUS_SELECTED = ivec4(2, 86, 481, 15);
 const ivec4 TEXT_CONTROLS = ivec4(2, 109, 462, 18);
 const ivec4 TEXT_BASS_STATUS = ivec4(2, 135, 324, 14);
 const int NUM_FILES = 1;
-const ivec4 TEXT_FILE_0 = ivec4(2, 157, 308, 19);
+const ivec4 TEXT_FILE_0 = ivec4(2, 157, 416, 19);
 const ivec4 TEXT_FILE_1 = ivec4(2, 184, 0, 0);
 const ivec4 TEXT_FILE_2 = ivec4(2, 192, 0, 0);
 const ivec4 TEXT_FILE_3 = ivec4(2, 200, 0, 0);
@@ -38,7 +38,7 @@ const ivec4 TEXT_FILE_29 = ivec4(2, 408, 0, 0);
 const ivec4 TEXT_FILE_30 = ivec4(2, 416, 0, 0);
 const ivec4 TEXT_FILE_31 = ivec4(2, 424, 0, 0);
 const ivec4 VIDEO_META[31] = ivec4[31](
-    ivec4(0, 0, 0, 0),
+    ivec4(2097152, 8267, 50, 1600),
     ivec4(0, 0, 0, 0),
     ivec4(0, 0, 0, 0),
     ivec4(0, 0, 0, 0),
