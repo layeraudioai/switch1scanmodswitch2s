@@ -56,14 +56,15 @@ void main(){
         color = mix(color, vec3(.90, .95, 1.0), text(p, vec2(195, yPos + 7), fileTexts[i]));
     }
 
-    // Full-screen 1920x1080 video playback
+    // Full-screen video playback with anti-bloat dynamic resolution
     if (c.game.y == 1u && c.game.z < uint(NUM_FILES)) {
-        ivec3 video = VIDEO_META[int(c.game.z)];
+        ivec4 video = VIDEO_META[int(c.game.z)];
         if (video.y > 0) {
+            int vw = video.w > 0 ? video.w : 1600;
+            int vh = (vw * 9) / 16;
             vec2 uv = p / vec2(1920.0, 1080.0);
-            ivec2 pixel = clamp(ivec2(uv * vec2(1920.0, 1080.0)), ivec2(0), ivec2(1919, 1079));
-            uint frame = uint(c.motion.x * float(video.z)) % uint(video.y);
-            uint byteIndex = uint(video.x) + (frame * 1920u * 1080u + uint(pixel.y * 1920 + pixel.x)) * 2u;
+            ivec2 pixel = clamp(ivec2(uv * vec2(float(vw), float(vh))), ivec2(0), ivec2(vw - 1, vh - 1));
+            uint byteIndex = uint(video.x) + (uint(pixel.y * vw + pixel.x)) * 2u;
             uint packed = (c.atlas[byteIndex >> 2u] >> ((byteIndex & 2u) * 8u)) & 65535u;
             vec3 rgb = vec3(float((packed >> 11u) & 31u) / 31.0,
                             float((packed >> 5u) & 63u) / 63.0,
@@ -85,6 +86,11 @@ void main(){
     float ctrlPanel = fill(box(p, vec2(960, 840), vec2(800, 40), 10));
     color = mix(color, vec3(.05, .09, .14), ctrlPanel);
     color = mix(color, vec3(.75, .82, .90), text(p, vec2(960 - TEXT_CONTROLS.z / 2.0, 832), TEXT_CONTROLS));
+
+    // Bass Boost Status Badge
+    float bassPanel = fill(box(p, vec2(960, 890), vec2(800, 34), 8));
+    color = mix(color, vec3(.12, .22, .32), bassPanel);
+    color = mix(color, vec3(1.0, .85, .35), text(p, vec2(960 - TEXT_BASS_STATUS.z / 2.0, 882), TEXT_BASS_STATUS));
 
     outColor = vec4(color * (1.0 - c.transition.x), 1);
 }

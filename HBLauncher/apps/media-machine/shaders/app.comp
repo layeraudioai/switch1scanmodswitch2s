@@ -26,9 +26,11 @@ void main(){
         c.motion.x = 0.0; // Start video time at the selected clip's first frame.
         hbSound(c.game.x + 1u);
     }
-    // Y button: Pause / Resume toggle
+    // Y button: Stop playback
     if ((buttons & HB_Y) != 0u) {
-        c.motion.y = (c.motion.y == 0.0) ? 1.0 : 0.0;
+        c.game.y = 0u;
+        c.motion.x = 0.0;
+        c.motion.y = 0.0;
     }
     // X button: Queue next (move selection to next song without interrupting playback)
     if (NUM_FILES > 0 && (buttons & HB_X) != 0u) {

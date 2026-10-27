@@ -1,0 +1,58 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+layout(local_size_x=1) in;
+#include "abi.glsl"
+#include "hb.glsl"
+#include "text.glsl"
+
+void main(){
+    uint buttons = hbPressed();
+    c.motion.x += 1.0 / 60.0;
+    c.state.z++;
+    c.transition.x = max(0.0, c.transition.x - 1.0 / 15.0);
+
+    uint fileCount = uint(max(NUM_FILES, 1));
+    c.game.x = min(c.game.x, fileCount - 1u);
+    // D-pad navigation stays inert on an empty library placeholder.
+    if (NUM_FILES > 0 && (buttons & HB_UP) != 0u) {
+        c.game.x = (c.game.x + fileCount - 1u) % fileCount;
+    }
+    if (NUM_FILES > 0 && (buttons & HB_DOWN) != 0u) {
+        c.game.x = (c.game.x + 1u) % fileCount;
+    }
+    // A button selects exactly the manifest entry with this stable 1-based ID.
+    if (c.game.y == 0u && NUM_FILES > 0 && (buttons & HB_A) != 0u) {
+        c.game.y = 1u;
+        c.game.z = c.game.x;
+        c.motion.x = 0.0; // Start video time at the selected clip's first frame.
+        hbSound(c.game.x + 1u);
+    }
+// Y button: Stop playback
+    if ((buttons & HB_Y) != 0u) {
+        c.game.y = 0u;
+        c.motion.x = 0.0;
+        c.motion.y = 0.0;
+    }
+    // X button: Queue next (move selection to next song without interrupting playback)
+    if (NUM_FILES > 0 && (buttons & HB_X) != 0u) {
+        c.game.x = (c.game.x + 1u) % fileCount;
+    }
+    // B button: Stop playing if playing, or quit if already stopped. Minus button: quit.
+    if (hbConnected() && (buttons & HB_B) != 0u) {
+        if (c.game.y == 1u) {
+            c.game.y = 0u; // Stop playing
+        } else {
+            hbExit(); // Quit
+        }
+    }
+    if (hbConnected() && (buttons & HB_MINUS) != 0u) {
+        hbExit();
+    }
+
+    // Advance playback time only if not paused
+    if (c.game.y == 1u && c.motion.y == 0.0) {
+        c.motion.x += 1.0 / 60.0;
+    }
+
+    hbEndFrame();
+}

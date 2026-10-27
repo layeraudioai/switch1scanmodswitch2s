@@ -1,4 +1,4 @@
-"""Build deterministic audio assets without signal-level processing."""
+"""Build video streaming manifests, pre-encode first 120s protected intro segments, and build audio assets."""
 from pathlib import Path
 import json
 import shutil
@@ -9,6 +9,10 @@ from PIL import Image, ImageDraw, ImageFont
 root = Path(__file__).resolve().parent
 content_dir = root / 'content'
 content_dir.mkdir(exist_ok=True)
+audio_dir = root / 'assets'
+audio_dir.mkdir(exist_ok=True)
+segments_dir = root / 'assets' / 'segments'
+segments_dir.mkdir(parents=True, exist_ok=True)
 
 AUDIO_EXTENSIONS = {'.mp3', '.wav', '.flac', '.ogg', '.aac', '.m4a', '.wma', '.opus', '.m4b'}
 VIDEO_EXTENSIONS = {'.mp4', '.m4v', '.mov', '.mkv', '.webm', '.avi', '.3gp', '.ts'}
@@ -30,11 +34,12 @@ header = []
 y = 2
 items = [
     ('TITLE', 'Media Machine - Video and Audio', 36),
-    ('SUBTITLE', 'Select with Up/Down; A plays video or audio', 18),
-    ('STATUS_READY', ('Videos are predecoded to 1920x1080 at 60 fps.' if video_files else
+    ('SUBTITLE', 'Select with Up/Down; A plays | Y stops | X next', 18),
+    ('STATUS_READY', ('Protected 120s Intro + Real-time Segment Streaming @ 900p50.' if video_files else
                       'Add video or audio files to content/ to begin.'), 16),
-    ('STATUS_SELECTED', 'Playing selected media on Switch 2', 16),
-    ('CONTROLS', 'D-Pad: Navigate | A: Play | X: Stop | B/Minus: Exit', 18),
+    ('STATUS_SELECTED', 'Streaming video (Protected first 120s + 60s sliding window)', 16),
+    ('CONTROLS', 'D-Pad: Navigate | A: Play | Y: Stop | X: Next | B: Exit', 18),
+    ('BASS_STATUS', 'Audio Effect: +12dB Bass Boost (110Hz)', 16),
 ]
 for name, label, size in items:
     face = ImageFont.truetype(font, size)
@@ -69,77 +74,72 @@ d.rectangle((60, 80, 196, 170), fill=(40, 90, 130), outline=(120, 240, 255), wid
 d.polygon([(110, 105), (110, 145), (150, 125)], fill=(120, 255, 220))
 im.save(root / 'assets/icon.png')
 
-if files and not shutil.which('ffmpeg'):
-    raise RuntimeError('ffmpeg is required to package audio/video files (install ffmpeg and rebuild)')
-
 atlas_bytes = atlas.tobytes()
-video_payload = bytearray()
-video_meta = [(0, 0, 0) for _ in files]
+video_meta = [(0, 0, 0, 0) for _ in files]
 video_indices = [i for i, source in enumerate(files) if source.suffix.lower() in VIDEO_EXTENSIONS]
-frame_width, frame_height, frame_rate = 1920, 1080, 60
-frame_bytes = frame_width * frame_height * 2
-pieces_dir = root / 'assets'
-pieces_dir.mkdir(exist_ok=True)
-video_pieces_manifest = {}
+stream_manifest = {}
+frame_width, frame_height, frame_rate = 1600, 900, 50
 
 for position, i in enumerate(video_indices):
     source = files[i]
-    with tempfile.NamedTemporaryFile(prefix=f'media-machine-vid-{i}-', suffix='.rgb565', dir=pieces_dir, delete=False) as tmp:
-        temp_name = tmp.name
-    command = [
-        'ffmpeg', '-v', 'error', '-i', str(source), '-an', '-sn', '-dn', '-q', '0', '-lossless', 'true',
-        '-filter_complex:v', f'copy,fps={frame_rate},scale={frame_width}:{frame_height}:force_original_aspect_ratio=increase,crop={frame_width}:{frame_height}',
-        '-f', 'rawvideo', '-pix_fmt', 'rgb565le', '-y', temp_name,
-    ]
-    try:
-        subprocess.run(command, check=True, timeout=1800)
-        decoded_size = Path(temp_name).stat().st_size
-        if not decoded_size or decoded_size % frame_bytes:
-            raise RuntimeError(f'FFmpeg produced invalid frames for {source.name}')
-        frame_count = decoded_size // frame_bytes
-        offset = len(atlas_bytes) + len(video_payload)
-        piece_paths = {}
-        with Path(temp_name).open('rb') as decoded:
-            frame0_bytes = decoded.read(frame_bytes)
-            video_payload.extend(frame0_bytes)
-            p0_path = pieces_dir / f'video_{i}_p0.rgb565'
-            p0_path.write_bytes(frame0_bytes)
-            piece_paths['0'] = str(p0_path.relative_to(root))
-            for f_idx in range(1, frame_count):
-                fb = decoded.read(frame_bytes)
-                if not fb:
-                    break
-                p_path = pieces_dir / f'video_{i}_p{f_idx}.rgb565'
-                p_path.write_bytes(fb)
-                piece_paths[str(f_idx)] = str(p_path.relative_to(root))
+    duration = 600.0  # default 10 mins fallback
+    if shutil.which('ffprobe'):
+        try:
+            probe = subprocess.run(
+                ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', str(source)],
+                capture_output=True, text=True, check=True, timeout=10
+            )
+            if probe.stdout.strip():
+                duration = float(probe.stdout.strip())
+        except Exception:
+            pass
 
-        video_meta[i] = (offset, frame_count, frame_rate)
-        video_pieces_manifest[str(i)] = {
-            'offset': offset,
-            'fps': frame_rate,
-            'totalFrames': frame_count,
-            'pieces': piece_paths
-        }
-        print(f'Chunked {source.name}: {frame_count} frames into pre-rendered piece files at {frame_width}x{frame_height}')
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
-        raise RuntimeError(f'Could not process video {source.name}') from exc
-    finally:
-        Path(temp_name).unlink(missing_ok=True)
+    total_frames = int(duration * frame_rate)
+    offset = len(atlas_bytes)
+    video_meta[i] = (offset, total_frames, frame_rate, frame_width)
+    stream_manifest[str(i)] = {
+        'source': str(source.relative_to(root)),
+        'fps': frame_rate,
+        'totalFrames': total_frames,
+        'duration': duration,
+        'offset': offset,
+        'width': frame_width,
+        'height': frame_height
+    }
 
-if len(atlas_bytes) + len(video_payload) > 7 * 1024 * 1024:
-    raise RuntimeError('Packaged video data exceeds the 7 MiB app data limit')
+    # Pre-encode first 120 seconds (Segment 0: 0-60s, Segment 1: 60-120s) as protected intro
+    if shutil.which('ffmpeg'):
+        for seg_idx in range(2):
+            seg_path = segments_dir / f'clip_{i}_seg_{seg_idx}.rgb565'
+            if not seg_path.exists() or seg_path.stat().st_size == 0:
+                start_time = seg_idx * 60
+                cmd = [
+                    'ffmpeg', '-v', 'error',
+                    '-ss', str(start_time),
+                    '-i', str(source),
+                    '-t', '60',
+                    '-an', '-sn', '-dn', '-q', '0', '-lossless', 'true',
+                    '-filter_complex:v', f'fps={frame_rate},scale={frame_width}:{frame_height}:force_original_aspect_ratio=increase,crop={frame_width}:{frame_height}',
+                    '-f', 'rawvideo', '-pix_fmt', 'rgb565le', '-y', str(seg_path)
+                ]
+                try:
+                    subprocess.run(cmd, check=True, timeout=300)
+                    print(f'Pre-encoded protected intro segment {seg_idx} (0-120s block) for {source.name}')
+                except Exception as e:
+                    print(f'Warning: Could not pre-encode segment {seg_idx} for {source.name}: {e}')
 
-header.append('const ivec3 VIDEO_META[31] = ivec3[31](')
-header.append(',\n'.join(f'    ivec3({offset}, {count}, {fps})' for offset, count, fps in video_meta + [(0, 0, 0)] * (31 - len(video_meta))))
+header.append('const ivec4 VIDEO_META[31] = ivec4[31](')
+header.append(',\n'.join(f'    ivec4({offset}, {count}, {fps}, {w})' for offset, count, fps, w in video_meta + [(0, 0, 0, 0)] * (31 - len(video_meta))))
 header.append(');')
-(root / 'assets/text.bin').write_bytes(atlas_bytes + video_payload)
+
+(root / 'assets/text.bin').write_bytes(atlas_bytes + bytearray(frame_width * frame_height * 2))
 (root / 'shaders/text.glsl').write_text('\n'.join(header) + '\n')
-(root / 'assets/video-pieces.json').write_text(json.dumps(video_pieces_manifest, indent=2) + '\n')
+(root / 'assets/video-stream.json').write_text(json.dumps(stream_manifest, indent=2) + '\n')
 
 audio_files = [p for p in files if p.suffix.lower() in AUDIO_EXTENSIONS]
 audio_effects = {}
 for i, source in enumerate(files, 1):
-    target = audio_dir / f'audio_{i}.pcm' if 'audio_dir' in locals() else (root / f'assets/audio_{i}.pcm')
+    target = audio_dir / f'audio_{i}.pcm'
     if source.suffix.lower() not in AUDIO_EXTENSIONS | VIDEO_EXTENSIONS:
         continue
     with tempfile.NamedTemporaryFile(prefix='media-machine-', suffix='.pcm', dir=root / 'assets', delete=False) as tmp:
@@ -168,12 +168,13 @@ for i, source in enumerate(files, 1):
         Path(temp_name).unlink(missing_ok=True)
     audio_effects[str(i)] = f'assets/audio_{i}.pcm'
 
-for stale in (root / 'assets').glob('audio_*.pcm'):
+for stale in audio_dir.glob('audio_*.pcm'):
     try:
         if stale.name not in {f'audio_{i}.pcm' for i in range(1, len(files) + 1)}:
             stale.unlink()
     except OSError:
         pass
+
 manifest_path = root / 'app.json'
 manifest = json.loads(manifest_path.read_text())
 manifest['audio'] = {

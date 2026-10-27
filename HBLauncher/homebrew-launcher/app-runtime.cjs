@@ -41,28 +41,31 @@ async function create({rpc,menu,directory,prepareApp=prepare}){
    await runtime.active.service?.afterBatch(state);
    if(runtime.active.app.id==='media-machine'){
     try{
-     const pieceState=await rpc.read(mapped+800,16);
-     const loadedFrame=pieceState.readInt32LE(0);
-     const targetFrame=pieceState.readInt32LE(4);
-     const clipIndex=pieceState.readInt32LE(12);
-     if(loadedFrame!==targetFrame){
-      const piecesFile=path.join(runtime.active.app.root,'assets','video-pieces.json');
-      const manifest=JSON.parse(await fs.readFile(piecesFile,'utf8'));
+     const stateBuf = await rpc.read(mapped, 1024);
+     const playing = stateBuf.readUInt32LE(788);
+     const clipIndex = stateBuf.readUInt32LE(792);
+     const timeSec = stateBuf.readFloatLE(64);
+     const fps = 50;
+     const targetFrame = playing === 1 ? Math.floor(timeSec * fps) : 0;
+     
+     if(playing === 1){
+      if(!runtime.mediaMachineStreamer){
+       const { MediaMachineStreamer } = require('../apps/media-machine/streamer.cjs');
+       runtime.mediaMachineStreamer = new MediaMachineStreamer(runtime.active.app.root);
+       await runtime.mediaMachineStreamer.init();
+      }
+      const streamManifestPath=path.join(runtime.active.app.root,'assets','video-stream.json');
+      const manifest=JSON.parse(await fs.readFile(streamManifestPath,'utf8'));
       const clipInfo=manifest[String(clipIndex)];
       if(clipInfo){
-       const pieceRelPath=clipInfo.pieces[String(targetFrame)];
-       if(pieceRelPath){
-        const absolutePiecePath=path.resolve(runtime.active.app.root,pieceRelPath);
-        const frameBytes=await fs.readFile(absolutePiecePath);
-        if(frameBytes.length===1920*1080*2){
-         await rpc.write(mapped+1024+clipInfo.offset,frameBytes);
-         const updateBuf=Buffer.alloc(4);updateBuf.writeInt32LE(targetFrame);
-         await rpc.write(mapped+800,updateBuf);
-        }
+       const absoluteSourcePath=path.resolve(runtime.active.app.root,clipInfo.source);
+       const frameBytes=await runtime.mediaMachineStreamer.getFrame(clipIndex, absoluteSourcePath, targetFrame);
+       if(frameBytes.length===1600*900*2){
+        await rpc.write(mapped+1024+clipInfo.offset, frameBytes);
        }
       }
      }
-    }catch(e){/* ignore piece swap errors */}
+    }catch(e){/* ignore stream sync errors */}
    }
    if(runtime.active.app.id==='youtube'){
     try{
