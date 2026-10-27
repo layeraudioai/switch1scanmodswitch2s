@@ -54,7 +54,7 @@ The audio-input listing uses 256 bytes per device entry.
 4. Disassemble only the relevant range with Capstone:
 
    ```sh
-   python3 -m venv .venv
+   python -m venv .venv
    .venv/bin/python -m pip install capstone
    .venv/bin/python sdk/tools/disassemble.py runs/SESSION/sdk.bin 0xOFFSET --bytes 256
    ```

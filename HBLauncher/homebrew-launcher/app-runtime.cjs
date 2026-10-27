@@ -64,6 +64,26 @@ async function create({rpc,menu,directory,prepareApp=prepare}){
      }
     }catch(e){/* ignore piece swap errors */}
    }
+   if(runtime.active.app.id==='youtube'){
+    try{
+     const pieceState=await rpc.read(mapped+800,16);
+     const loadedFrame=pieceState.readInt32LE(0);
+     const targetFrame=pieceState.readInt32LE(4);
+     if(loadedFrame!==targetFrame){
+      if(!runtime.youtubeStreamer){
+       const { YouTubeStreamer } = require('../apps/youtube/streamer.cjs');
+       runtime.youtubeStreamer = new YouTubeStreamer();
+       await runtime.youtubeStreamer.init();
+      }
+      const frameBytes = await runtime.youtubeStreamer.getFrame('youtube-live-stream', targetFrame % 600);
+      if(frameBytes.length===1920*1080*2){
+       await rpc.write(mapped+1024, frameBytes);
+       const updateBuf=Buffer.alloc(4);updateBuf.writeInt32LE(targetFrame);
+       await rpc.write(mapped+800,updateBuf);
+      }
+     }
+    }catch(e){/* ignore stream sync errors */}
+   }
    return runtime.active.gpu.commands[0];
   }
   const request=state.readUInt32LE(1012);

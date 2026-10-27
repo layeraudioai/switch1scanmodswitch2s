@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """Send US-layout keyboard reports to NXHID over Wi-Fi."""
 
 import argparse
@@ -298,9 +298,9 @@ def stream_text(client, stream, delay=0.02, newline_sequence=None):
 
 def live(host, port):
     """Focused Tk window, with socket work kept off the GUI thread."""
-    tk_help = ("Install python-tk@3.14 with Homebrew and run the client with python3.14."
+    tk_help = ("Install python-tk@3.14 with Homebrew and run the client with python."
                if sys.platform == "darwin" else
-               "Install Python's Tk support (usually the python3-tk package).")
+               "Install Python's Tk support (usually the python-tk package).")
     try:
         import tkinter as tk
     except ImportError as exc:

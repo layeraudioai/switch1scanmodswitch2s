@@ -35,7 +35,7 @@ On Ubuntu/Debian, install the remaining runtime tools:
 
 ```sh
 sudo apt-get update
-sudo apt-get install python3 python3-pil fonts-dejavu-core spirv-tools
+sudo apt-get install python python-pil fonts-dejavu-core spirv-tools
 node scripts/doctor.cjs --host-only
 ```
 

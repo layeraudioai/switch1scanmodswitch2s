@@ -37,16 +37,16 @@ Replace `192.168.1.50` with your Switch IP.
 
 ```sh
 # Literal text.
-python3 client/nxhid.py 192.168.1.50 text 'Hello!'
+python client/nxhid.py 192.168.1.50 text 'Hello!'
 
 # File input.
-python3 client/nxhid.py 192.168.1.50 text --file notes.txt
+python client/nxhid.py 192.168.1.50 text --file notes.txt
 
 # Stream stdin as it arrives.
-printf 'Hello\n' | python3 client/nxhid.py 192.168.1.50 text
+printf 'Hello\n' | python client/nxhid.py 192.168.1.50 text
 
 # Avoid SmileBASIC auto-indent with ENTER,HOME,CTRL+DELETE at each newline.
-python3 client/nxhid.py 192.168.1.50 text --delay 0.02 \
+python client/nxhid.py 192.168.1.50 text --delay 0.02 \
   --newline-sequence 'ENTER,HOME,CTRL+DELETE' < notes.txt
 ```
 
@@ -67,18 +67,18 @@ Unsupported characters stop sending; already-streamed characters cannot be undon
 ## Live input
 
 ```sh
-python3 client/nxhid.py 192.168.1.50 live
+python client/nxhid.py 192.168.1.50 live
 ```
 
 Requires Tkinter. Type in the focused window; Escape stops forwarding and losing
 focus releases keys. Live mode forwards physical key states, with lock state
-controlled by the target. Run `python3 client/nxhid.py --help` for other commands.
+controlled by the target. Run `python client/nxhid.py --help` for other commands.
 
 On macOS, use Python with Tk 8.6 or newer. With Homebrew:
 
 ```sh
 brew install python-tk@3.14
-python3.14 client/nxhid.py 192.168.1.50 live
+python client/nxhid.py 192.168.1.50 live
 ```
 
 ## Build

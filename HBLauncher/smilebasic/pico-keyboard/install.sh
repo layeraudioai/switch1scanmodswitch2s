@@ -8,7 +8,7 @@ if [[ -z "$drive" || ! -d "$drive" || -z "$host" ]]; then
   echo "Usage: $0 /path/to/CIRCUITPY computer-IP" >&2
   exit 1
 fi
-python3 - "$host" <<'PYIP'
+python - "$host" <<'PYIP'
 import ipaddress,sys
 try: ipaddress.IPv4Address(sys.argv[1])
 except ValueError: raise SystemExit('Use the computer LAN IPv4 address, for example 192.168.1.10.')
@@ -34,7 +34,7 @@ if [[ ! -d "$drive/lib/adafruit_hid" ]]; then
   mkdir -p "$drive/lib"
   cp -r "$repo_dir/pico-keyboard/lib/adafruit_hid" "$drive/lib/"
 fi
-python3 - "$drive/settings.toml" "$wifi_name" "$wifi_password" "$host" "$key" <<'PY'
+python - "$drive/settings.toml" "$wifi_name" "$wifi_password" "$host" "$key" <<'PY'
 import json,sys
 file,ssid,password,host,key=sys.argv[1:]
 with open(file,'w') as out:
